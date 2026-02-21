@@ -88,7 +88,7 @@ with tab2:
         with st.container(border=True):
             st.subheader("📌 Portfolio Snapshot")
 
-            k0, k1, k2, k3, k4 = st.columns(4)
+            k0, k1, k2, k3, k4 = st.columns(5)
 
            # k1.metric("Current Value", f"₹{total_current:,.0f}", f"{day_change:,.0f}")
            # k2.metric("Total Return %", f"{total_return:.2f}%")
