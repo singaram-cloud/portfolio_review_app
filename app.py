@@ -254,19 +254,10 @@ with tab4:
 
         st.subheader("🧠 AI Stock Research Terminal")
 
-        stock_list = sorted(df["Stock Name"].unique())
-        selected_stock = st.selectbox("Select Stock", stock_list)
+        stock_list2 = sorted(df["Stock Name"].unique())
+        selected_stock2 = st.selectbox("Select Stock", stock_list2)
 
-        stock = df[df["Stock Name"] == selected_stock].iloc[0]
-
-        with st.container(border=True):
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Return %", f"{stock['Return %']:.2f}%")
-            c2.metric("Day Change %", f"{stock['Day Change %']:.2f}%")
-            c3.metric("PE", f"{stock['PE TTM Price to Earnings']:.2f}")
-            c4.metric("Beta", f"{stock['Beta 1Year']:.2f}")
-
-        st.markdown(" ")
+        stock2 = df[df["Stock Name"] == selected_stock2].iloc[0]
 
         if st.button("Generate AI Investment Analysis"):
 
@@ -276,16 +267,16 @@ with tab4:
             Stock: {selected_stock}
 
             Metrics:
-            PE: {stock['PE TTM Price to Earnings']}
-            Sector PE: {stock['Sector PE TTM']}
-            ROE: {stock['ROE Annual %']}
-            ROCE: {stock['ROCE Annual %']}
-            Revenue Growth: {stock['Revenue Growth Annual YoY %']}
-            Net Profit Growth: {stock['Net Profit TTM Growth %']}
-            Beta: {stock['Beta 1Year']}
-            Institutional Holding: {stock['Institutional holding current Qtr %']}
-            1Y Std Dev: {stock['Standard Deviation 1Year']}
-            Portfolio Return: {stock['Return %']}
+            PE: {stock2['PE TTM Price to Earnings']}
+            Sector PE: {stock2['Sector PE TTM']}
+            ROE: {stock2['ROE Annual %']}
+            ROCE: {stock2['ROCE Annual %']}
+            Revenue Growth: {stock2['Revenue Growth Annual YoY %']}
+            Net Profit Growth: {stock2['Net Profit TTM Growth %']}
+            Beta: {stock2['Beta 1Year']}
+            Institutional Holding: {stock2['Institutional holding current Qtr %']}
+            1Y Std Dev: {stock2['Standard Deviation 1Year']}
+            Portfolio Return: {stock2['Return %']}
 
             Provide:
             1. Valuation assessment
