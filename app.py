@@ -28,7 +28,7 @@ st.markdown("## 📊 Smart Portfolio Dashboard")
 # ==========================================================
 # Create Tabs
 # ==========================================================
-tab1, tab2, tab3, tab4 = st.tabs(["📁 Upload", "📊 Dashboard", "🔎 Detailed View","Gen AI"])
+tab1, tab2, tab3, tab4, tab10 = st.tabs(["📁 Upload", "📊 Dashboard", "🔎 Detailed View","✅ Scorecard","🧠 Gen AI"])
 
 # ==========================================================
 # TAB 1 – FILE UPLOAD
@@ -245,6 +245,174 @@ with tab3:
         st.dataframe(stock_df)
 
 with tab4:
+    if "portfolio_df" not in st.session_state:
+        st.info("Upload file in Tab 1 first.")
+    else:
+
+        df = st.session_state["portfolio_df"].copy()
+
+        st.subheader("📊 Portfolio Scoring Dashboard")
+
+        # ==================================================
+        # 🔎 FILTER BAR
+        # ==================================================
+        with st.container(border=True):
+
+            f1, f2, f3, f4 = st.columns(4)
+
+            # Stock filter
+            stock_filter = f1.multiselect(
+                "Stock",
+                options=sorted(df["Stock Name"].unique())
+            )
+
+            # Sector filter
+            sector_filter = f2.multiselect(
+                "Sector",
+                options=sorted(df["Sector Name"].unique())
+            )
+
+            # Asset type
+            type_filter = f3.multiselect(
+                "Instrument Type",
+                options=sorted(df["Asset Type"].unique())
+            )
+
+            # Market Cap
+            mcap_filter = f4.multiselect(
+                "Market Cap",
+                options=sorted(df["Mcap Classification"].dropna().unique())
+            )
+
+            r1, r2, r3, r4 = st.columns(4)
+
+            price_range = r1.slider(
+                "Price Range",
+                float(df["Current Price"].min()),
+                float(df["Current Price"].max()),
+                (float(df["Current Price"].min()),
+                 float(df["Current Price"].max()))
+            )
+
+            pl_range = r2.slider(
+                "Return % Range",
+                float(df["Return %"].min()),
+                float(df["Return %"].max()),
+                (float(df["Return %"].min()),
+                 float(df["Return %"].max()))
+            )
+
+            pe_range = r3.slider(
+                "PE Range",
+                float(df["PE TTM Price to Earnings"].min()),
+                float(df["PE TTM Price to Earnings"].max()),
+                (float(df["PE TTM Price to Earnings"].min()),
+                 float(df["PE TTM Price to Earnings"].max()))
+            )
+
+            invest_range = r4.slider(
+                "Investment Range",
+                float(df["Invested Amount"].min()),
+                float(df["Invested Amount"].max()),
+                (float(df["Invested Amount"].min()),
+                 float(df["Invested Amount"].max()))
+            )
+
+        # ==================================================
+        # APPLY FILTERS
+        # ==================================================
+        if stock_filter:
+            df = df[df["Stock Name"].isin(stock_filter)]
+
+        if sector_filter:
+            df = df[df["Sector Name"].isin(sector_filter)]
+
+        if type_filter:
+            df = df[df["Asset Type"].isin(type_filter)]
+
+        if mcap_filter:
+            df = df[df["Mcap Classification"].isin(mcap_filter)]
+
+        df = df[
+            (df["Current Price"].between(price_range[0], price_range[1])) &
+            (df["Return %"].between(pl_range[0], pl_range[1])) &
+            (df["PE TTM Price to Earnings"].between(pe_range[0], pe_range[1])) &
+            (df["Invested Amount"].between(invest_range[0], invest_range[1]))
+        ]
+
+        # ==================================================
+        # SCORE CALCULATION (Use your advanced scoring logic)
+        # ==================================================
+        # Assume df already has calculated Total Score column
+        # If not, call scoring function here
+
+        # Example simplified total score
+        df["Score"] = (
+            df["ROE Annual %"] * 0.2 +
+            df["Revenue Growth Annual YoY %"] * 0.2 +
+            (100 - df["Beta 1Year"]*50) * 0.2 +
+            df["Trendlyne Momentum Score"] * 0.2 +
+            (df["Relative returns vs Nifty50 year%"]) * 0.2
+        )
+
+        df["Score"] = df["Score"].clip(lower=0)
+
+        # ==================================================
+        # COLOR CODING
+        # ==================================================
+        def score_flag(score):
+            if score >= 75:
+                return "🟢 Strong"
+            elif score >= 60:
+                return "🟡 Good"
+            elif score >= 45:
+                return "🟠 Average"
+            else:
+                return "🔴 Weak"
+
+        df["Rating"] = df["Score"].apply(score_flag)
+
+        # ==================================================
+        # DISPLAY TABLE
+        # ==================================================
+        st.subheader("📋 Scoring Table")
+
+        display_cols = [
+            "Stock Name",
+            "Sector Name",
+            "Asset Type",
+            "Current Price",
+            "Return %",
+            "PE TTM Price to Earnings",
+            "ROE Annual %",
+            "Beta 1Year",
+            "Score",
+            "Rating"
+        ]
+
+        styled_df = df[display_cols].sort_values("Score", ascending=False)
+
+        st.dataframe(styled_df, use_container_width=True)
+
+        # ==================================================
+        # SECTOR VIEW
+        # ==================================================
+        st.markdown(" ")
+        st.subheader("📊 Sector-Level View")
+
+        sector_group = df.groupby("Sector Name").agg(
+            Sector_Score=("Score", "mean"),
+            Total_Investment=("Invested Amount", "sum"),
+            Avg_PE=("PE TTM Price to Earnings", "mean"),
+            Avg_Beta=("Beta 1Year", "mean"),
+            Avg_ROE=("ROE Annual %", "mean")
+        ).reset_index()
+
+        sector_group = sector_group.sort_values("Sector_Score", ascending=False)
+
+        st.dataframe(sector_group, use_container_width=True)
+
+with tab10:
 
     if "portfolio_df" not in st.session_state:
         st.info("Upload file in Tab 1 first.")
