@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import openai
+
 
 def kpi_card(title, value):
     st.markdown(f"""
@@ -26,7 +28,7 @@ st.markdown("## 📊 Smart Portfolio Dashboard")
 # ==========================================================
 # Create Tabs
 # ==========================================================
-tab1, tab2, tab3 = st.tabs(["📁 Upload", "📊 Dashboard", "🔎 Detailed View"])
+tab1, tab2, tab3, tab4 = st.tabs(["📁 Upload", "📊 Dashboard", "🔎 Detailed View","Gen AI"])
 
 # ==========================================================
 # TAB 1 – FILE UPLOAD
@@ -241,3 +243,65 @@ with tab3:
 
         st.write("### Full Data Snapshot")
         st.dataframe(stock_df)
+
+with tab4:
+
+    if "portfolio_df" not in st.session_state:
+        st.info("Upload file in Tab 1 first.")
+    else:
+
+        df = st.session_state["portfolio_df"]
+
+        st.subheader("🧠 AI Stock Research Terminal")
+
+        stock_list = sorted(df["Stock Name"].unique())
+        selected_stock = st.selectbox("Select Stock", stock_list)
+
+        stock = df[df["Stock Name"] == selected_stock].iloc[0]
+
+        with st.container(border=True):
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Return %", f"{stock['Return %']:.2f}%")
+            c2.metric("Day Change %", f"{stock['Day Change %']:.2f}%")
+            c3.metric("PE", f"{stock['PE TTM Price to Earnings']:.2f}")
+            c4.metric("Beta", f"{stock['Beta 1Year']:.2f}")
+
+        st.markdown(" ")
+
+        if st.button("Generate AI Investment Analysis"):
+
+            prompt = f"""
+            Analyze this Indian stock from a portfolio perspective.
+
+            Stock: {selected_stock}
+
+            Metrics:
+            PE: {stock['PE TTM Price to Earnings']}
+            Sector PE: {stock['Sector PE TTM']}
+            ROE: {stock['ROE Annual %']}
+            ROCE: {stock['ROCE Annual %']}
+            Revenue Growth: {stock['Revenue Growth Annual YoY %']}
+            Net Profit Growth: {stock['Net Profit TTM Growth %']}
+            Beta: {stock['Beta 1Year']}
+            Institutional Holding: {stock['Institutional holding current Qtr %']}
+            1Y Std Dev: {stock['Standard Deviation 1Year']}
+            Portfolio Return: {stock['Return %']}
+
+            Provide:
+            1. Valuation assessment
+            2. Growth quality
+            3. Risk profile
+            4. Red flags
+            5. Investment bias (Accumulate / Hold / Reduce)
+            """
+
+            client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.5
+            )
+
+            st.markdown("### 📊 AI Analysis")
+            st.write(response.choices[0].message.content)
