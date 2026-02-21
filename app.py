@@ -48,8 +48,6 @@ st.title("📊 Portfolio Dashboard")
 
 st.set_page_config(layout="wide")
 
-st.markdown("## 📊 Smart Portfolio Dashboard")
-
 # ==========================================================
 # Create Tabs
 # ==========================================================
