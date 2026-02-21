@@ -1,12 +1,19 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
 
 st.set_page_config(layout="wide")
-st.title("📊 Smart Portfolio Dashboard")
 
-uploaded_file = st.file_uploader("Upload Portfolio Excel File", type=["xlsx"])
+# ---------------- HEADER ----------------
+header_col1, header_col2 = st.columns([3,1])
+
+with header_col1:
+    st.markdown("## 📊 Smart Portfolio Dashboard")
+
+with header_col2:
+    uploaded_file = st.file_uploader("Upload File", type=["xlsx"], label_visibility="collapsed")
+
+st.markdown("---")
 
 if uploaded_file is not None:
 
@@ -37,77 +44,95 @@ if uploaded_file is not None:
     total_pl = df["P/L"].sum()
     total_return = (total_pl / total_invested) * 100
 
+    # Previous day portfolio value
+    prev_day_value = total_current - df["Day P&L"].sum()
+    day_change = total_current - prev_day_value
+
+    # ---------------- KPI CARDS ----------------
+    st.subheader("📌 Portfolio Snapshot")
+
+    k1, k2, k3, k4 = st.columns(4)
+
+    k1.metric(
+        "Current Value",
+        f"₹{total_current:,.0f}",
+        f"{day_change:,.0f}"
+    )
+
+    k2.metric(
+        "Total Return %",
+        f"{total_return:.2f}%"
+    )
+
+    k3.metric(
+        "Total P/L",
+        f"₹{total_pl:,.0f}"
+    )
+
     win_rate = (df["P/L"] > 0).mean() * 100
-    weighted_beta = np.average(df["Beta 1Year"].fillna(1), weights=df["Current Value"])
-    avg_roe = df["ROE Annual %"].mean()
-
-    # ---------------- KPI SECTION ----------------
-    st.subheader("📌 Portfolio Health")
-
-    c1, c2, c3, c4, c5 = st.columns(5)
-
-    c1.metric("Invested", f"₹{total_invested:,.0f}")
-    c2.metric("Current Value", f"₹{total_current:,.0f}")
-    c3.metric("Return %", f"{total_return:.2f}%")
-    c4.metric("Win Rate", f"{win_rate:.1f}%")
-    c5.metric("Portfolio Beta", f"{weighted_beta:.2f}")
+    k4.metric(
+        "Win Rate",
+        f"{win_rate:.1f}%"
+    )
 
     st.markdown("---")
 
-    # ---------------- Allocation Section ----------------
-    st.subheader("📊 Allocation Overview")
+    # ---------------- ASSET TYPE BREAKDOWN ----------------
+    st.subheader("📊 Asset Breakdown")
 
-    col1, col2 = st.columns(2)
+    asset_summary = df.groupby("Asset Type").agg(
+        Invested=("Invested Amount", "sum"),
+        Current=("Current Value", "sum"),
+        PnL=("P/L", "sum")
+    ).reset_index()
 
-    with col1:
-        asset_alloc = df.groupby("Asset Type")["Current Value"].sum()
-        fig1, ax1 = plt.subplots()
-        ax1.pie(asset_alloc, labels=asset_alloc.index, autopct='%1.1f%%')
-        ax1.axis('equal')
-        st.pyplot(fig1)
+    cols = st.columns(len(asset_summary))
 
-    with col2:
-        sector_alloc = df.groupby("Sector Name")["Current Value"].sum().sort_values(ascending=False).head(8)
-        fig2, ax2 = plt.subplots()
-        ax2.bar(sector_alloc.index, sector_alloc.values)
-        ax2.set_xticklabels(sector_alloc.index, rotation=45)
-        st.pyplot(fig2)
-
-    st.markdown("---")
-
-    # ---------------- Risk Section ----------------
-    st.subheader("⚠ Risk Indicators")
-
-    high_beta = df.sort_values("Beta 1Year", ascending=False).head(5)
-    high_vol = df.sort_values("Standard Deviation 1Year", ascending=False).head(5)
-
-    col3, col4 = st.columns(2)
-
-    with col3:
-        st.write("Top 5 High Beta Stocks")
-        st.dataframe(high_beta[["Stock Name", "Beta 1Year", "Return %"]])
-
-    with col4:
-        st.write("Top 5 High Volatility Stocks")
-        st.dataframe(high_vol[["Stock Name", "Standard Deviation 1Year", "Return %"]])
+    for i, row in asset_summary.iterrows():
+        ret = (row["PnL"] / row["Invested"]) * 100 if row["Invested"] != 0 else 0
+        cols[i].metric(
+            row["Asset Type"],
+            f"₹{row['Current']:,.0f}",
+            f"{ret:.2f}%"
+        )
 
     st.markdown("---")
 
-    # ---------------- Quality Section ----------------
-    st.subheader("🏆 Quality & Value Signals")
+    # ---------------- PORTFOLIO LEVEL KPIs ----------------
+    st.subheader("📈 Portfolio Valuation Metrics")
 
-    quality = df[(df["ROE Annual %"] > 20) & (df["Revenue Growth Annual YoY %"] > 10)]
-    value = df[(df["PE TTM Price to Earnings"] < df["Sector PE TTM"]) & (df["ROE Annual %"] > 15)]
+    weighted_pe = np.average(
+        df["PE TTM Price to Earnings"].replace(0, np.nan).fillna(0),
+        weights=df["Current Value"]
+    )
 
-    col5, col6 = st.columns(2)
+    weighted_pb = np.average(
+        df["Price to Book Value Adjusted"].replace(0, np.nan).fillna(0),
+        weights=df["Current Value"]
+    )
 
-    with col5:
-        st.write("High ROE + High Growth")
-        st.dataframe(quality[["Stock Name", "ROE Annual %", "Revenue Growth Annual YoY %"]].head(5))
+    weighted_beta = np.average(
+        df["Beta 1Year"].fillna(1),
+        weights=df["Current Value"]
+    )
 
-    with col6:
-        st.write("Value Picks (Low PE vs Sector)")
-        st.dataframe(value[["Stock Name", "PE TTM Price to Earnings", "Sector PE TTM"]].head(5))
+    weighted_roe = np.average(
+        df["ROE Annual %"].fillna(0),
+        weights=df["Current Value"]
+    )
+
+    weighted_roce = np.average(
+        df["ROCE Annual %"].fillna(0),
+        weights=df["Current Value"]
+    )
+
+    v1, v2, v3, v4, v5 = st.columns(5)
+
+    v1.metric("Portfolio PE", f"{weighted_pe:.2f}")
+    v2.metric("Portfolio PB", f"{weighted_pb:.2f}")
+    v3.metric("Portfolio Beta", f"{weighted_beta:.2f}")
+    v4.metric("Portfolio ROE", f"{weighted_roe:.2f}%")
+    v5.metric("Portfolio ROCE", f"{weighted_roce:.2f}%")
 
 else:
-    st.info("Upload an Excel file to generate smart dashboard.")
+    st.info("Upload portfolio file to view dashboard.")
