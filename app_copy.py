@@ -44,10 +44,10 @@ if uploaded_file is not None:
     col4.metric("Return %", f"{total_return_pct:.2f}%")
 
 
-    kpi_card("Total Invested", f"₹{total_invested:,.0f}")
-    kpi_card("Current Value", f"₹{total_current_value:,.0f}")
-    kpi_card("Profit / Loss", f"₹{total_profit_loss:,.0f}")
-    kpi_card("Return %", f"{total_return_pct:.2f}%")
+    col1.kpi_card("Total Invested", f"₹{total_invested:,.0f}")
+    col2.kpi_card("Current Value", f"₹{total_current_value:,.0f}")
+    col3.kpi_card("Profit / Loss", f"₹{total_profit_loss:,.0f}")
+    col4.kpi_card("Return %", f"{total_return_pct:.2f}%")
 
 
     st.markdown("---")
