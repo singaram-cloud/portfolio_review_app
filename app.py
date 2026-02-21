@@ -508,6 +508,14 @@ with tab4:
                 st.write(f"Momentum: {stock['Trendlyne Momentum Score']}")
 
 with tab5:
+    if "portfolio_df" not in st.session_state:
+        st.info("Upload file in Tab 1 first.")
+    else:
+
+        df = st.session_state["portfolio_df"].copy()
+
+        st.subheader("📊 Portfolio Scoring Dashboard")
+
         # ==================================================
         # SECTOR VIEW
         # ==================================================
@@ -515,14 +523,14 @@ with tab5:
         st.subheader("📊 Sector-Level View")
 
         sector_group = df.groupby("Sector Name").agg(
-            Sector_Score=("Score", "mean"),
             Total_Investment=("Invested Amount", "sum"),
-            Avg_PE=("PE TTM Price to Earnings", "mean"),
-            Avg_Beta=("Beta 1Year", "mean"),
-            Avg_ROE=("ROE Annual %", "mean")
+            Current_Value=("Current Value", "sum"),
+            PL=("P/L", "mean")
         ).reset_index()
 
-        sector_group = sector_group.sort_values("Sector_Score", ascending=False)
+        sector_group["P/L%"]=round((sector_group["PL"]/sector_group["Total_Investment"])*100,2)
+
+        sector_group = sector_group.sort_values("Current_Value", ascending=False)
 
         st.dataframe(sector_group, use_container_width=True)
 
