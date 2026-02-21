@@ -193,6 +193,17 @@ with tab2:
             v4.metric("Portfolio ROE", f"{weighted_roe:.2f}%")
             v5.metric("Portfolio ROCE", f"{weighted_roce:.2f}%")
 
+            with v1:
+                kpi_card("Portfolio PE", f"{weighted_pe:.2f}")
+            with v2:
+                kpi_card("Portfolio PB", f"{weighted_pb:.2f}")
+            with v3:
+                kpi_card("Portfolio Beta", f"{weighted_beta:.2f}")
+            with v4:
+                kpi_card("Portfolio ROE", f"{weighted_roe:.2f}%")
+            with v5:
+                kpi_card("Portfolio ROCE", f"{weighted_roce:.2f}%")
+
         st.markdown(" ")
 
         # ---------------- Performance Tables ----------------
