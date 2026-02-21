@@ -88,17 +88,23 @@ with tab2:
         with st.container(border=True):
             st.subheader("📌 Portfolio Snapshot")
 
-            k1, k2, k3, k4 = st.columns(4)
+            k0, k1, k2, k3, k4 = st.columns(4)
 
            # k1.metric("Current Value", f"₹{total_current:,.0f}", f"{day_change:,.0f}")
            # k2.metric("Total Return %", f"{total_return:.2f}%")
            # k3.metric("Total P/L", f"₹{total_pl:,.0f}")
            # k4.metric("Win Rate", f"{win_rate:.1f}%")
 
-            k1.kpi_card("Total Invested", f"₹{total_invested:,.0f}")
-            k2.kpi_card("Current Value", f"₹{total_current_value:,.0f}")
-            k3.kpi_card("Profit / Loss", f"₹{total_profit_loss:,.0f}")
-            k4.kpi_card("Return %", f"{total_return_pct:.2f}%")
+            with k0:
+                kpi_card("Total Invested", f"₹{total_invested:,.0f}")
+            with k1:
+                kpi_card("Current Value", f"₹{total_current:,.0f}", f"{day_change:,.0f}")
+            with k2:
+                kpi_card("Total Return %", f"₹{total_return:,.2f}")
+            with k3:
+                kpi_card("Total P/L", f"₹{total_pl:,.0f}")
+            with k4:
+                kpi_card("Win Rate", f"{win_rate:.1f}%")
 
 
         st.markdown(" ")
