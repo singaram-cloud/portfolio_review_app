@@ -187,12 +187,6 @@ with tab2:
 
             v1, v2, v3, v4, v5 = st.columns(5)
 
-            v1.metric("Portfolio PE", f"{weighted_pe:.2f}")
-            v2.metric("Portfolio PB", f"{weighted_pb:.2f}")
-            v3.metric("Portfolio Beta", f"{weighted_beta:.2f}")
-            v4.metric("Portfolio ROE", f"{weighted_roe:.2f}%")
-            v5.metric("Portfolio ROCE", f"{weighted_roce:.2f}%")
-
             with v1:
                 kpi_card("Portfolio PE", f"{weighted_pe:.2f}")
             with v2:
