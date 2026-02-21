@@ -98,7 +98,7 @@ with tab2:
             with k0:
                 kpi_card("Total Invested", f"₹{total_invested:,.0f}")
             with k1:
-                kpi_card("Current Value", f"₹{total_current:,.0f}", f"{day_change:,.0f}")
+                kpi_card("Current Value", f"₹{total_current:,.0f}")
             with k2:
                 kpi_card("Total Return %", f"₹{total_return:,.2f}")
             with k3:
