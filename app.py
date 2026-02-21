@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import openai
-
+import numpy as np
 
 def kpi_card(title, value):
     st.markdown(f"""
@@ -17,6 +17,31 @@ def kpi_card(title, value):
         </div>
     """, unsafe_allow_html=True)
 
+def winsorize(series, lower=0.05, upper=0.95):
+    low = series.quantile(lower)
+    high = series.quantile(upper)
+    return series.clip(low, high)
+
+def zscore_scaled(series):
+    series = winsorize(series)
+    mean = series.mean()
+    std = series.std()
+    if std == 0:
+        return pd.Series(50, index=series.index)
+    z = (series - mean) / std
+    score = 50 + (z * 15)
+    return score.clip(0, 100)
+
+def pillar_icon(score):
+    if score >= 75:
+        return "🟢"
+    elif score >= 65:
+        return "🟡"
+    elif score >= 50:
+        return "🟠"
+    else:
+        return "🔴"
+
 st.set_page_config(layout="wide")
 st.title("📊 Portfolio Dashboard")
 
@@ -28,7 +53,7 @@ st.markdown("## 📊 Smart Portfolio Dashboard")
 # ==========================================================
 # Create Tabs
 # ==========================================================
-tab1, tab2, tab3, tab4, tab10 = st.tabs(["📁 Upload", "📊 Dashboard", "🔎 Detailed View","✅ Scorecard","🧠 Gen AI"])
+tab1, tab2, tab3, tab4, tab5, tab10 = st.tabs(["📁 Upload", "📊 Dashboard", "🔎 Detailed View","🧮 Scorecard","✅ Sector Analysis","🧠 Gen AI"])
 
 # ==========================================================
 # TAB 1 – FILE UPLOAD
@@ -341,59 +366,148 @@ with tab4:
         ]
 
         # ==================================================
-        # SCORE CALCULATION (Use your advanced scoring logic)
+        # 1️⃣ VALUATION
         # ==================================================
-        # Assume df already has calculated Total Score column
-        # If not, call scoring function here
+        df["Earnings Yield"] = 1 / df["PE TTM Price to Earnings"].replace(0, np.nan)
 
-        # Example simplified total score
-        df["Score"] = (
-            df["ROE Annual %"] * 0.2 +
-            df["Revenue Growth Annual YoY %"] * 0.2 +
-            (100 - df["Beta 1Year"]*50) * 0.2 +
-            df["Trendlyne Momentum Score"] * 0.2 +
-            (df["Relative returns vs Nifty50 year%"]) * 0.2
+        ey_score = zscore_scaled(df["Earnings Yield"])
+
+        df["PE Premium"] = df["PE TTM Price to Earnings"] - df["Sector PE TTM"]
+        sector_score = zscore_scaled(-df["PE Premium"])
+
+        peg_score = zscore_scaled(-df["PEG TTM PE to Growth"])
+
+        df["Valuation"] = (
+            ey_score * 0.5 +
+            sector_score * 0.3 +
+            peg_score * 0.2
         )
 
-        df["Score"] = df["Score"].clip(lower=0)
+        # ==================================================
+        # 2️⃣ QUALITY
+        # ==================================================
+        roe_score = zscore_scaled(df["ROE Annual %"])
+        roce_score = zscore_scaled(df["ROCE Annual %"])
+        pio_score = zscore_scaled(df["Piotroski Score"])
+        inst_score = zscore_scaled(df["Institutional holding current Qtr %"])
+
+        df["Quality"] = (
+            roe_score * 0.4 +
+            roce_score * 0.3 +
+            pio_score * 0.2 +
+            inst_score * 0.1
+        )
 
         # ==================================================
-        # COLOR CODING
+        # 3️⃣ GROWTH
         # ==================================================
-        def score_flag(score):
-            if score >= 75:
-                return "🟢 Strong"
-            elif score >= 60:
-                return "🟡 Good"
-            elif score >= 45:
-                return "🟠 Average"
-            else:
-                return "🔴 Weak"
+        rev_score = zscore_scaled(df["Revenue Growth Annual YoY %"])
+        profit_score = zscore_scaled(df["Net Profit TTM Growth %"])
 
-        df["Rating"] = df["Score"].apply(score_flag)
+        df["Growth"] = rev_score * 0.5 + profit_score * 0.5
+
+        df.loc[df["Revenue Growth Annual YoY %"] < 0, "Growth"] *= 0.7
+        df.loc[df["Net Profit TTM Growth %"] < 0, "Growth"] *= 0.7
+
+        # ==================================================
+        # 4️⃣ RISK
+        # ==================================================
+        beta_score = zscore_scaled(-df["Beta 1Year"])
+        vol_score = zscore_scaled(-df["Standard Deviation 1Year"])
+
+        df["Risk"] = beta_score * 0.5 + vol_score * 0.5
+
+        # ==================================================
+        # 5️⃣ MARKET STRENGTH
+        # ==================================================
+        rel_score = zscore_scaled(df["Relative returns vs Nifty50 year%"])
+        momentum_score = zscore_scaled(df["Trendlyne Momentum Score"])
+
+        df["Market"] = rel_score * 0.6 + momentum_score * 0.4
+
+        # ==================================================
+        # FINAL SCORE
+        # ==================================================
+        df["Total Score"] = (
+            df["Valuation"] * 0.20 +
+            df["Quality"] * 0.25 +
+            df["Growth"] * 0.20 +
+            df["Risk"] * 0.20 +
+            df["Market"] * 0.15
+        )
+
+        df["Total Score"] = df["Total Score"].round(1)
+        df["Rank"] = df["Total Score"].rank(ascending=False)
 
         # ==================================================
         # DISPLAY TABLE
         # ==================================================
-        st.subheader("📋 Scoring Table")
+        st.subheader("📊 Multi-Factor Scoring Dashboard")
 
-        display_cols = [
-            "Stock Name",
-            "Sector Name",
-            "Asset Type",
-            "Current Price",
-            "Return %",
-            "PE TTM Price to Earnings",
-            "ROE Annual %",
-            "Beta 1Year",
-            "Score",
-            "Rating"
+        header_cols = st.columns([1.2,1,1,1,1,1,1,1,1,0.8])
+
+        headers = [
+            "Stock", "Curr Value", "P/L %",
+            "Val", "Qual", "Grow", "Risk", "Mkt", "Total", "Details"
         ]
 
-        styled_df = df[display_cols].sort_values("Score", ascending=False)
+        for col, header in zip(header_cols, headers):
+            col.markdown(f"**{header}**")
 
-        st.dataframe(styled_df, use_container_width=True)
+        for _, row in df.sort_values("Total Score", ascending=False).iterrows():
 
+            cols = st.columns([1.2,1,1,1,1,1,1,1,1,0.8])
+
+            cols[0].write(row["NSEcode"])
+            cols[1].write(f"₹{row['Current Value']:,.0f}")
+            cols[2].write(f"{row['Return %']:.2f}%")
+
+            cols[3].write(f"{pillar_icon(row['Valuation'])} {row['Valuation']:.1f}")
+            cols[4].write(f"{pillar_icon(row['Quality'])} {row['Quality']:.1f}")
+            cols[5].write(f"{pillar_icon(row['Growth'])} {row['Growth']:.1f}")
+            cols[6].write(f"{pillar_icon(row['Risk'])} {row['Risk']:.1f}")
+            cols[7].write(f"{pillar_icon(row['Market'])} {row['Market']:.1f}")
+            cols[8].write(f"{pillar_icon(row['Total Score'])} {row['Total Score']:.1f}")
+
+            if cols[9].button("View", key=f"view_{row['NSEcode']}"):
+                st.session_state["selected_stock"] = row["NSEcode"]
+
+        # ==================================================
+        # BREAKDOWN SECTION
+        # ==================================================
+        if "selected_stock" in st.session_state:
+
+            stock_code = st.session_state["selected_stock"]
+            stock = df[df["NSEcode"] == stock_code].iloc[0]
+
+            st.markdown("---")
+            st.subheader(f"🔎 Detailed Breakdown: {stock_code}")
+
+            with st.container(border=True):
+
+                c1,c2,c3,c4,c5 = st.columns(5)
+
+                c1.metric("Valuation", round(stock["Valuation"],1))
+                c2.metric("Quality", round(stock["Quality"],1))
+                c3.metric("Growth", round(stock["Growth"],1))
+                c4.metric("Risk", round(stock["Risk"],1))
+                c5.metric("Market", round(stock["Market"],1))
+
+                st.markdown("---")
+                st.write("### Raw Drivers")
+
+                st.write(f"ROE: {stock['ROE Annual %']}%")
+                st.write(f"ROCE: {stock['ROCE Annual %']}%")
+                st.write(f"Revenue Growth: {stock['Revenue Growth Annual YoY %']}%")
+                st.write(f"Net Profit Growth: {stock['Net Profit TTM Growth %']}%")
+                st.write(f"Beta: {stock['Beta 1Year']}")
+                st.write(f"Std Dev (1Y): {stock['Standard Deviation 1Year']}")
+                st.write(f"PE: {stock['PE TTM Price to Earnings']}")
+                st.write(f"Sector PE: {stock['Sector PE TTM']}")
+                st.write(f"Relative Return: {stock['Relative returns vs Nifty50 year%']}%")
+                st.write(f"Momentum: {stock['Trendlyne Momentum Score']}")
+
+with tab5:
         # ==================================================
         # SECTOR VIEW
         # ==================================================
