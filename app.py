@@ -255,7 +255,7 @@ with tab4:
         st.subheader("🧠 AI Stock Research Terminal")
 
         stock_list2 = sorted(df2["Stock Name"].unique())
-        selected_stock2 = st.selectbox("Select Stock", stock_list2)
+        selected_stock2 = st.selectbox("Select Stock", stock_list2,key="ai_stock_select")
 
         stock2 = df2[df2["Stock Name"] == selected_stock2].iloc[0]
 
