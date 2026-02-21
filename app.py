@@ -451,6 +451,44 @@ with tab4:
             "Val", "Qual", "Grow", "Risk", "Mkt", "Total", "Details"
         ]
 
+        @st.dialog("Stock Factor Breakdown")
+        def show_breakdown(stock_code):
+
+            stock = df[df["NSEcode"] == stock_code].iloc[0]
+
+            st.subheader(f"{stock_code} - Detailed Analysis")
+
+            c1, c2, c3, c4, c5 = st.columns(5)
+
+            c1.metric("Valuation", round(stock["Valuation"],1))
+            c2.metric("Quality", round(stock["Quality"],1))
+            c3.metric("Growth", round(stock["Growth"],1))
+            c4.metric("Risk", round(stock["Risk"],1))
+            c5.metric("Market", round(stock["Market"],1))
+
+            st.markdown("---")
+            st.write("### Raw Drivers")
+
+            colA, colB = st.columns(2)
+
+            with colA:
+                st.write(f"ROE: {stock['ROE Annual %']}%")
+                st.write(f"ROCE: {stock['ROCE Annual %']}%")
+                st.write(f"Revenue Growth: {stock['Revenue Growth Annual YoY %']}%")
+                st.write(f"Net Profit Growth: {stock['Net Profit TTM Growth %']}%")
+
+            with colB:
+                st.write(f"Beta: {stock['Beta 1Year']}")
+                st.write(f"Std Dev (1Y): {stock['Standard Deviation 1Year']}")
+                st.write(f"PE: {stock['PE TTM Price to Earnings']}")
+                st.write(f"Sector PE: {stock['Sector PE TTM']}")
+
+            st.markdown("---")
+            st.write("### Market Metrics")
+
+            st.write(f"Relative Return vs Nifty: {stock['Relative returns vs Nifty50 year%']}%")
+            st.write(f"Momentum Score: {stock['Trendlyne Momentum Score']}")
+
         for col, header in zip(header_cols, headers):
             col.markdown(f"**{header}**")
 
@@ -470,42 +508,7 @@ with tab4:
             cols[8].write(f"{pillar_icon(row['Total Score'])} {row['Total Score']:.1f}")
 
             if cols[9].button("View", key=f"view_{row['NSEcode']}"):
-                st.session_state["selected_stock"] = row["NSEcode"]
-
-        # ==================================================
-        # BREAKDOWN SECTION
-        # ==================================================
-        if "selected_stock" in st.session_state:
-
-            stock_code = st.session_state["selected_stock"]
-            stock = df[df["NSEcode"] == stock_code].iloc[0]
-
-            st.markdown("---")
-            st.subheader(f"🔎 Detailed Breakdown: {stock_code}")
-
-            with st.container(border=True):
-
-                c1,c2,c3,c4,c5 = st.columns(5)
-
-                c1.metric("Valuation", round(stock["Valuation"],1))
-                c2.metric("Quality", round(stock["Quality"],1))
-                c3.metric("Growth", round(stock["Growth"],1))
-                c4.metric("Risk", round(stock["Risk"],1))
-                c5.metric("Market", round(stock["Market"],1))
-
-                st.markdown("---")
-                st.write("### Raw Drivers")
-
-                st.write(f"ROE: {stock['ROE Annual %']}%")
-                st.write(f"ROCE: {stock['ROCE Annual %']}%")
-                st.write(f"Revenue Growth: {stock['Revenue Growth Annual YoY %']}%")
-                st.write(f"Net Profit Growth: {stock['Net Profit TTM Growth %']}%")
-                st.write(f"Beta: {stock['Beta 1Year']}")
-                st.write(f"Std Dev (1Y): {stock['Standard Deviation 1Year']}")
-                st.write(f"PE: {stock['PE TTM Price to Earnings']}")
-                st.write(f"Sector PE: {stock['Sector PE TTM']}")
-                st.write(f"Relative Return: {stock['Relative returns vs Nifty50 year%']}%")
-                st.write(f"Momentum: {stock['Trendlyne Momentum Score']}")
+                show_breakdown(row["NSEcode"])
 
 with tab5:
     if "portfolio_df" not in st.session_state:
@@ -536,7 +539,7 @@ with tab5:
 
 with tab10:
 
-    if "portfolio_df" not in st.session_state:
+    if "portfolio_df" not in st.session_state:  
         st.info("Upload file in Tab 1 first.")
     else:
 
