@@ -250,21 +250,21 @@ with tab4:
         st.info("Upload file in Tab 1 first.")
     else:
 
-        df = st.session_state["portfolio_df"]
+        df2 = st.session_state["portfolio_df"]
 
         st.subheader("🧠 AI Stock Research Terminal")
 
-        stock_list2 = sorted(df["Stock Name"].unique())
+        stock_list2 = sorted(df2["Stock Name"].unique())
         selected_stock2 = st.selectbox("Select Stock", stock_list2)
 
-        stock2 = df[df["Stock Name"] == selected_stock2].iloc[0]
+        stock2 = df2[df2["Stock Name"] == selected_stock2].iloc[0]
 
         if st.button("Generate AI Investment Analysis"):
 
             prompt = f"""
             Analyze this Indian stock from a portfolio perspective.
 
-            Stock: {selected_stock}
+            Stock: {selected_stock2}
 
             Metrics:
             PE: {stock2['PE TTM Price to Earnings']}
