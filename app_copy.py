@@ -2,21 +2,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def kpi_card(title, value):
-    st.markdown(f"""
-        <div style="
-            background-color:#F8F9FA;
-            padding:20px;
-            border-radius:12px;
-            text-align:center;
-        ">
-            <h4 style="margin:0;">{title}</h4>
-            <h2 style="margin:0;">{value}</h2>
-        </div>
-    """, unsafe_allow_html=True)
-
-st.set_page_config(layout="wide")
-st.title("📊 Portfolio Dashboard")
 
 uploaded_file = st.file_uploader("Upload Portfolio Excel File", type=["xlsx"])
 
@@ -42,12 +27,6 @@ if uploaded_file is not None:
     col2.metric("Current Value", f"₹{total_current_value:,.0f}")
     col3.metric("Profit / Loss", f"₹{total_profit_loss:,.0f}")
     col4.metric("Return %", f"{total_return_pct:.2f}%")
-
-
-    col1.kpi_card("Total Invested", f"₹{total_invested:,.0f}")
-    col2.kpi_card("Current Value", f"₹{total_current_value:,.0f}")
-    col3.kpi_card("Profit / Loss", f"₹{total_profit_loss:,.0f}")
-    col4.kpi_card("Return %", f"{total_return_pct:.2f}%")
 
 
     st.markdown("---")

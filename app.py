@@ -2,6 +2,23 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+def kpi_card(title, value):
+    st.markdown(f"""
+        <div style="
+            background-color:#F8F9FA;
+            padding:20px;
+            border-radius:12px;
+            text-align:center;
+        ">
+            <h4 style="margin:0;">{title}</h4>
+            <h2 style="margin:0;">{value}</h2>
+        </div>
+    """, unsafe_allow_html=True)
+
+st.set_page_config(layout="wide")
+st.title("📊 Portfolio Dashboard")
+
+
 st.set_page_config(layout="wide")
 
 st.markdown("## 📊 Smart Portfolio Dashboard")
@@ -73,10 +90,16 @@ with tab2:
 
             k1, k2, k3, k4 = st.columns(4)
 
-            k1.metric("Current Value", f"₹{total_current:,.0f}", f"{day_change:,.0f}")
-            k2.metric("Total Return %", f"{total_return:.2f}%")
-            k3.metric("Total P/L", f"₹{total_pl:,.0f}")
-            k4.metric("Win Rate", f"{win_rate:.1f}%")
+           # k1.metric("Current Value", f"₹{total_current:,.0f}", f"{day_change:,.0f}")
+           # k2.metric("Total Return %", f"{total_return:.2f}%")
+           # k3.metric("Total P/L", f"₹{total_pl:,.0f}")
+           # k4.metric("Win Rate", f"{win_rate:.1f}%")
+
+            k1.kpi_card("Total Invested", f"₹{total_invested:,.0f}")
+            k2.kpi_card("Current Value", f"₹{total_current_value:,.0f}")
+            k3.kpi_card("Profit / Loss", f"₹{total_profit_loss:,.0f}")
+            k4.kpi_card("Return %", f"{total_return_pct:.2f}%")
+
 
         st.markdown(" ")
 
