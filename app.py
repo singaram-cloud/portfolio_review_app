@@ -4,173 +4,211 @@ import numpy as np
 
 st.set_page_config(layout="wide")
 
-# ---------------- HEADER ----------------
-header_col1, header_col2 = st.columns([3,1])
+st.markdown("## 📊 Smart Portfolio Dashboard")
 
-with header_col1:
-    st.markdown("## 📊 Smart Portfolio Dashboard")
+# ==========================================================
+# Create Tabs
+# ==========================================================
+tab1, tab2, tab3 = st.tabs(["📁 Upload", "📊 Dashboard", "🔎 Detailed View"])
 
-with header_col2:
-    uploaded_file = st.file_uploader("Upload File", type=["xlsx"], label_visibility="collapsed")
+# ==========================================================
+# TAB 1 – FILE UPLOAD
+# ==========================================================
+with tab1:
 
-st.markdown("---")
+    uploaded_file = st.file_uploader("Upload Portfolio Excel File", type=["xlsx"])
 
-if uploaded_file is not None:
+    if uploaded_file is not None:
 
-    df = pd.read_excel(uploaded_file)
-    df.columns = df.columns.str.strip()
+        df = pd.read_excel(uploaded_file)
+        df.columns = df.columns.str.strip()
 
-    # ---------------- Asset Classification ----------------
-    def classify_asset(row):
-        nse = str(row["NSEcode"])
-        name = str(row["Stock Name"]).upper()
+        # ---------------- Asset Classification ----------------
+        def classify_asset(row):
+            nse = str(row["NSEcode"])
+            name = str(row["Stock Name"]).upper()
 
-        if nse.startswith("F000"):
-            return "Mutual Fund"
-        elif "ETF" in name:
-            return "ETF"
-        else:
-            return "Equity"
+            if nse.startswith("F000"):
+                return "Mutual Fund"
+            elif "ETF" in name:
+                return "ETF"
+            else:
+                return "Equity"
 
-    df["Asset Type"] = df.apply(classify_asset, axis=1)
+        df["Asset Type"] = df.apply(classify_asset, axis=1)
 
-    # ---------------- Core Calculations ----------------
-    df["Current Value"] = df["Quantity"] * df["Current Price"]
-    df["P/L"] = df["Current Value"] - df["Invested Amount"]
-    df["Return %"] = (df["P/L"] / df["Invested Amount"]) * 100
+        # ---------------- Core Calculations ----------------
+        df["Current Value"] = df["Quantity"] * df["Current Price"]
+        df["P/L"] = df["Current Value"] - df["Invested Amount"]
+        df["Return %"] = (df["P/L"] / df["Invested Amount"]) * 100
 
-    total_invested = df["Invested Amount"].sum()
-    total_current = df["Current Value"].sum()
-    total_pl = df["P/L"].sum()
-    total_return = (total_pl / total_invested) * 100
+        # Store in session state
+        st.session_state["portfolio_df"] = df
 
-    prev_day_value = total_current - df["Day P&L"].sum()
-    day_change = total_current - prev_day_value
+        st.success("File uploaded successfully! Go to Dashboard tab.")
 
-    win_rate = (df["P/L"] > 0).mean() * 100
+# ==========================================================
+# TAB 2 – DASHBOARD
+# ==========================================================
+with tab2:
 
-    # ============================================================
-    # 📌 SECTION 1: PORTFOLIO SNAPSHOT (BORDERED)
-    # ============================================================
+    if "portfolio_df" not in st.session_state:
+        st.info("Upload file in Tab 1 to view dashboard.")
+    else:
 
-    with st.container(border=True):
-        st.subheader("📌 Portfolio Snapshot")
+        df = st.session_state["portfolio_df"]
 
-        k1, k2, k3, k4 = st.columns(4)
+        total_invested = df["Invested Amount"].sum()
+        total_current = df["Current Value"].sum()
+        total_pl = df["P/L"].sum()
+        total_return = (total_pl / total_invested) * 100
 
-        k1.metric("Current Value", f"₹{total_current:,.0f}", f"{day_change:,.0f}")
-        k2.metric("Total Return %", f"{total_return:.2f}%")
-        k3.metric("Total P/L", f"₹{total_pl:,.0f}")
-        k4.metric("Win Rate", f"{win_rate:.1f}%")
+        prev_day_value = total_current - df["Day P&L"].sum()
+        day_change = total_current - prev_day_value
+        win_rate = (df["P/L"] > 0).mean() * 100
 
-    st.markdown(" ")
+        # ---------------- Snapshot ----------------
+        with st.container(border=True):
+            st.subheader("📌 Portfolio Snapshot")
 
-    # ============================================================
-    # 📊 SECTION 2: ASSET BREAKDOWN (BORDERED)
-    # ============================================================
+            k1, k2, k3, k4 = st.columns(4)
 
-    with st.container(border=True):
-        st.subheader("📊 Asset Breakdown")
+            k1.metric("Current Value", f"₹{total_current:,.0f}", f"{day_change:,.0f}")
+            k2.metric("Total Return %", f"{total_return:.2f}%")
+            k3.metric("Total P/L", f"₹{total_pl:,.0f}")
+            k4.metric("Win Rate", f"{win_rate:.1f}%")
 
-        asset_summary = df.groupby("Asset Type").agg(
-            Invested=("Invested Amount", "sum"),
-            Current=("Current Value", "sum"),
-            PnL=("P/L", "sum")
-        ).reset_index()
+        st.markdown(" ")
 
-        cols = st.columns(len(asset_summary))
+        # ---------------- Asset Breakdown ----------------
+        with st.container(border=True):
+            st.subheader("📊 Asset Breakdown")
 
-        for i, row in asset_summary.iterrows():
-            ret = (row["PnL"] / row["Invested"]) * 100 if row["Invested"] != 0 else 0
-            cols[i].metric(
-                row["Asset Type"],
-                f"₹{row['Current']:,.0f}",
-                f"{ret:.2f}%"
+            asset_summary = df.groupby("Asset Type").agg(
+                Invested=("Invested Amount", "sum"),
+                Current=("Current Value", "sum"),
+                PnL=("P/L", "sum")
+            ).reset_index()
+
+            cols = st.columns(len(asset_summary))
+
+            for i, row in asset_summary.iterrows():
+                ret = (row["PnL"] / row["Invested"]) * 100 if row["Invested"] != 0 else 0
+                cols[i].metric(
+                    row["Asset Type"],
+                    f"₹{row['Current']:,.0f}",
+                    f"{ret:.2f}%"
+                )
+
+        st.markdown(" ")
+
+        # ---------------- Portfolio Valuation ----------------
+        with st.container(border=True):
+            st.subheader("📈 Portfolio Valuation Metrics")
+
+            weighted_pe = np.average(
+                df["PE TTM Price to Earnings"].replace(0, np.nan).fillna(0),
+                weights=df["Current Value"]
             )
 
-    st.markdown(" ")
+            weighted_pb = np.average(
+                df["Price to Book Value Adjusted"].replace(0, np.nan).fillna(0),
+                weights=df["Current Value"]
+            )
 
-    # ============================================================
-    # 📈 SECTION 3: PORTFOLIO VALUATION METRICS (BORDERED)
-    # ============================================================
+            weighted_beta = np.average(
+                df["Beta 1Year"].fillna(1),
+                weights=df["Current Value"]
+            )
 
-    with st.container(border=True):
-        st.subheader("📈 Portfolio Valuation Metrics")
+            weighted_roe = np.average(
+                df["ROE Annual %"].fillna(0),
+                weights=df["Current Value"]
+            )
 
-        weighted_pe = np.average(
-            df["PE TTM Price to Earnings"].replace(0, np.nan).fillna(0),
-            weights=df["Current Value"]
-        )
+            weighted_roce = np.average(
+                df["ROCE Annual %"].fillna(0),
+                weights=df["Current Value"]
+            )
 
-        weighted_pb = np.average(
-            df["Price to Book Value Adjusted"].replace(0, np.nan).fillna(0),
-            weights=df["Current Value"]
-        )
+            v1, v2, v3, v4, v5 = st.columns(5)
 
-        weighted_beta = np.average(
-            df["Beta 1Year"].fillna(1),
-            weights=df["Current Value"]
-        )
+            v1.metric("Portfolio PE", f"{weighted_pe:.2f}")
+            v2.metric("Portfolio PB", f"{weighted_pb:.2f}")
+            v3.metric("Portfolio Beta", f"{weighted_beta:.2f}")
+            v4.metric("Portfolio ROE", f"{weighted_roe:.2f}%")
+            v5.metric("Portfolio ROCE", f"{weighted_roce:.2f}%")
 
-        weighted_roe = np.average(
-            df["ROE Annual %"].fillna(0),
-            weights=df["Current Value"]
-        )
+        st.markdown(" ")
 
-        weighted_roce = np.average(
-            df["ROCE Annual %"].fillna(0),
-            weights=df["Current Value"]
-        )
+        # ---------------- Performance Tables ----------------
+        with st.container(border=True):
+            st.subheader("📊 Overall Performance")
 
-        v1, v2, v3, v4, v5 = st.columns(5)
+            col1, col2 = st.columns(2)
 
-        v1.metric("Portfolio PE", f"{weighted_pe:.2f}")
-        v2.metric("Portfolio PB", f"{weighted_pb:.2f}")
-        v3.metric("Portfolio Beta", f"{weighted_beta:.2f}")
-        v4.metric("Portfolio ROE", f"{weighted_roe:.2f}%")
-        v5.metric("Portfolio ROCE", f"{weighted_roce:.2f}%")
+            with col1:
+                st.markdown("#### 🔥 Top 5 Profit % Stocks")
+                top_profit = df.sort_values("Return %", ascending=False).head(5)
+                st.dataframe(top_profit[["Stock Name", "Return %", "P/L"]])
 
-    st.markdown(" ")
+            with col2:
+                st.markdown("#### ❌ Top 5 Loss % Stocks")
+                top_loss = df.sort_values("Return %").head(5)
+                st.dataframe(top_loss[["Stock Name", "Return %", "P/L"]])
 
-    # ============================================================
-    # 📊 SECTION 4: PERFORMANCE TABLES
-    # ============================================================
+        st.markdown(" ")
 
-    with st.container(border=True):
-        st.subheader("📊 Overall Performance (Since Purchase)")
+        with st.container(border=True):
+            st.subheader("📅 Today's Performance")
 
-        col1, col2 = st.columns(2)
+            col3, col4 = st.columns(2)
 
-        with col1:
-            st.markdown("#### 🔥 Top 5 Profit % Stocks")
-            top_profit = df.sort_values("Return %", ascending=False).head(5)
-            st.dataframe(top_profit[["Stock Name", "Return %", "P/L"]])
+            with col3:
+                st.markdown("#### 🚀 Top 5 Gainers Today")
+                today_profit = df.sort_values("Day Change %", ascending=False).head(5)
+                st.dataframe(today_profit[["Stock Name", "Day Change %", "Day P&L"]])
 
-        with col2:
-            st.markdown("#### ❌ Top 5 Loss % Stocks")
-            top_loss = df.sort_values("Return %").head(5)
-            st.dataframe(top_loss[["Stock Name", "Return %", "P/L"]])
+            with col4:
+                st.markdown("#### 🔻 Top 5 Losers Today")
+                today_loss = df.sort_values("Day Change %").head(5)
+                st.dataframe(today_loss[["Stock Name", "Day Change %", "Day P&L"]])
 
-    st.markdown(" ")
+# ==========================================================
+# TAB 3 – DETAILED STOCK ANALYZER
+# ==========================================================
+with tab3:
 
-    # ============================================================
-    # 📊 SECTION 5: TODAY PERFORMANCE
-    # ============================================================
+    if "portfolio_df" not in st.session_state:
+        st.info("Upload file in Tab 1 first.")
+    else:
 
-    with st.container(border=True):
-        st.subheader("📅 Today's Performance")
+        df = st.session_state["portfolio_df"]
 
-        col3, col4 = st.columns(2)
+        st.subheader("🔎 Stock Performance Analyzer")
 
-        with col3:
-            st.markdown("#### 🚀 Top 5 Gainers Today")
-            today_profit = df.sort_values("Day Change %", ascending=False).head(5)
-            st.dataframe(today_profit[["Stock Name", "Day Change %", "Day P&L"]])
+        stock_list = sorted(df["Stock Name"].unique())
+        selected_stock = st.selectbox("Select Stock", stock_list)
 
-        with col4:
-            st.markdown("#### 🔻 Top 5 Losers Today")
-            today_loss = df.sort_values("Day Change %").head(5)
-            st.dataframe(today_loss[["Stock Name", "Day Change %", "Day P&L"]])
+        stock_df = df[df["Stock Name"] == selected_stock].iloc[0]
 
-else:
-    st.info("Upload portfolio file to view dashboard.")
+        with st.container(border=True):
+
+            c1, c2, c3, c4 = st.columns(4)
+
+            c1.metric("Return %", f"{stock_df['Return %']:.2f}%")
+            c2.metric("Day Change %", f"{stock_df['Day Change %']:.2f}%")
+            c3.metric("PE", f"{stock_df['PE TTM Price to Earnings']:.2f}")
+            c4.metric("Beta", f"{stock_df['Beta 1Year']:.2f}")
+
+            c5, c6, c7, c8 = st.columns(4)
+
+            c5.metric("ROE", f"{stock_df['ROE Annual %']:.2f}%")
+            c6.metric("ROCE", f"{stock_df['ROCE Annual %']:.2f}%")
+            c7.metric("Revenue Growth", f"{stock_df['Revenue Growth Annual YoY %']:.2f}%")
+            c8.metric("Institutional Holding", f"{stock_df['Institutional holding current Qtr %']:.2f}%")
+
+        st.markdown(" ")
+
+        st.write("### Full Data Snapshot")
+        st.dataframe(stock_df)
