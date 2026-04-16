@@ -89,7 +89,7 @@ with tab1:
 
         st.success("File uploaded successfully! Go to Dashboard tab.")
     
-    st.link_button("Sample file format", "https://github.com/singaram-cloud/portfolio_review_app/raw/refs/heads/main/sample_file.xlsx")
+    st.link_button("Sample file format - click here to download", "https://github.com/singaram-cloud/portfolio_review_app/raw/refs/heads/main/sample_file.xlsx")
 
 # ==========================================================
 # TAB 2 – DASHBOARD
