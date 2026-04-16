@@ -60,8 +60,6 @@ with tab1:
 
     uploaded_file = st.file_uploader("Upload Portfolio Excel File", type=["xlsx"])
 
-    st.link_button("Sample file format", "https://github.com/singaram-cloud/portfolio_review_app/raw/refs/heads/main/sample_file.xlsx")
-
     if uploaded_file is not None:
 
         df = pd.read_excel(uploaded_file)
@@ -90,6 +88,8 @@ with tab1:
         st.session_state["portfolio_df"] = df
 
         st.success("File uploaded successfully! Go to Dashboard tab.")
+    
+    st.link_button("Sample file format", "https://github.com/singaram-cloud/portfolio_review_app/raw/refs/heads/main/sample_file.xlsx")
 
 # ==========================================================
 # TAB 2 – DASHBOARD
