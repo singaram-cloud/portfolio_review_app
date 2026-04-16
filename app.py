@@ -60,7 +60,7 @@ with tab1:
 
     uploaded_file = st.file_uploader("Upload Portfolio Excel File", type=["xlsx"])
 
-    st.link_button("Sample file format", "https://google.com")
+    st.link_button("Sample file format", "https://github.com/singaram-cloud/portfolio_review_app/raw/refs/heads/main/sample_file.xlsx")
 
     if uploaded_file is not None:
 
