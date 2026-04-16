@@ -51,7 +51,7 @@ st.set_page_config(layout="wide")
 # ==========================================================
 # Create Tabs
 # ==========================================================
-tab1, tab2, tab3, tab4, tab5, tab10 = st.tabs(["📁 Upload", "📊 Dashboard", "🔎 Detailed View","🧮 Scorecard","✅ Sector Analysis","🧠 Gen AI"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📁 Upload", "📊 Dashboard", "🔎 Detailed View","🧮 Scorecard","✅ Sector Analysis"])
 
 # ==========================================================
 # TAB 1 – FILE UPLOAD
@@ -59,6 +59,8 @@ tab1, tab2, tab3, tab4, tab5, tab10 = st.tabs(["📁 Upload", "📊 Dashboard", 
 with tab1:
 
     uploaded_file = st.file_uploader("Upload Portfolio Excel File", type=["xlsx"])
+
+    st.link_button("Sample file format", "https://google.com")
 
     if uploaded_file is not None:
 
@@ -540,55 +542,3 @@ with tab5:
 
         st.dataframe(sector_group, use_container_width=True)
 
-with tab10:
-
-    if "portfolio_df" not in st.session_state:  
-        st.info("Upload file in Tab 1 first.")
-    else:
-
-        df2 = st.session_state["portfolio_df"]
-
-        st.subheader("🧠 AI Stock Research Terminal")
-
-        stock_list2 = sorted(df2["Stock Name"].unique())
-        selected_stock2 = st.selectbox("Select Stock", stock_list2,key="ai_stock_select")
-
-        stock2 = df2[df2["Stock Name"] == selected_stock2].iloc[0]
-
-        if st.button("Generate AI Investment Analysis"):
-
-            prompt = f"""
-            Analyze this Indian stock from a portfolio perspective.
-
-            Stock: {selected_stock2}
-
-            Metrics:
-            PE: {stock2['PE TTM Price to Earnings']}
-            Sector PE: {stock2['Sector PE TTM']}
-            ROE: {stock2['ROE Annual %']}
-            ROCE: {stock2['ROCE Annual %']}
-            Revenue Growth: {stock2['Revenue Growth Annual YoY %']}
-            Net Profit Growth: {stock2['Net Profit TTM Growth %']}
-            Beta: {stock2['Beta 1Year']}
-            Institutional Holding: {stock2['Institutional holding current Qtr %']}
-            1Y Std Dev: {stock2['Standard Deviation 1Year']}
-            Portfolio Return: {stock2['Return %']}
-
-            Provide:
-            1. Valuation assessment
-            2. Growth quality
-            3. Risk profile
-            4. Red flags
-            5. Investment bias (Accumulate / Hold / Reduce)
-            """
-
-            client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.5
-            )
-
-            st.markdown("### 📊 AI Analysis")
-            st.write(response.choices[0].message.content)
